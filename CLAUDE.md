@@ -16,14 +16,15 @@ Demo: tamper-evident deal files, attested inside a TEE, then settled as ETH paym
 
 1. Run `python verify_deal.py <deal file>`.
    - If it prints anything other than `OK`, **stop**. Do not call attest or any Tangem tool, and do not create an intent. Report that the deal is TAMPERED.
-2. If the deal's `status` is already `settled`, or `settlements.json` already has a record with this `deal_hash`, stop and report it. Never create a duplicate intent.
+2. If the deal's `status` is already `settled`, or `settlements.json` already has a non-`EXPIRED` record with this `deal_hash`, stop and report it. Never create a duplicate intent.
+   - **Expired intent** (the user says it is unreachable in the Tangem app): first call `get_transaction_status` once. Only if it is still `CREATED`, mark that record `status: "EXPIRED"` with `expiredAt`. Then create a fresh intent (steps 4-6), reusing the deal's existing `attestation` (don't re-attest), and add `replaces: <old intentId>` to the new record.
 3. **Attest**: `POST <ATTEST_URL>/attest` with JSON `{"deal_hash": "<deal_hash>"}` (e.g. `curl -sf -X POST -H "Content-Type: application/json" -d '{"deal_hash":"..."}' <ATTEST_URL>/attest -o <scratchpad>/attest.json`). Save the response in the scratchpad, not the repo.
    - If the request fails (placeholder URL, network error, non-2xx response, invalid JSON), or `python check_attestation.py <deal file> <scratchpad>/attest.json` prints anything other than `OK`, **stop**. Do not call any Tangem tool and do not create an intent. Report that attestation FAILED.
    - Build the quote reference: `{"url": "<ATTEST_URL>/attest", "quote_prefix": <first 16 bytes of the quote, as 32 hex chars>, "quote_sha256": <sha256 of the full quote bytes>, "attested_at": <UTC ISO-8601>}`.
    - Write it to the deal as the top-level `attestation` field (outside `terms`, so `deal_hash` stays the same).
 4. Call `mcp__tangem__wallets__get_tokens`. Find the entry where `networkId` == `terms.settlement.networkId` and `tokenId` == `terms.settlement.tokenId`, and use its address as `fromAddress`. If there are several addresses, ask the user which one to use.
 5. Call `mcp__tangem__transactions__send_transaction` with:
-   `amount` = `terms.settlement.amount`, `networkId`, `tokenId`, `toAddress` = `terms.settlement.toAddress`, `fromAddress`, `sendNotification: true`, `comment: "DealProof <deal_id> <deal_hash>"`.
+   `amount` = `terms.settlement.amount`, `networkId`, `tokenId`, `toAddress` = `terms.settlement.toAddress`, `fromAddress`, `sendNotification: true`. Do not pass `comment`. The link between the deal (`deal_hash`, `attestation`) and the intent is kept only in `settlements.json`.
 6. Append `{deal_id, deal_hash, intentId, deeplink, timestamp (UTC ISO-8601), status: "CREATED", attestation: <the same quote reference>}` to `settlements.json`. Set the deal's `status` to `"settlement_pending"`. Do not touch `terms` or `deal_hash`.
 7. Tell the user to approve and sign the request in the Tangem app (push notification or deeplink). Nothing moves until they sign.
 8. Status check: the Tangem tool must not be polled in a loop. Call `mcp__tangem__transactions__get_transaction_status` once now, then again each time the user says they've signed.

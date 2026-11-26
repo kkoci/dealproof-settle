@@ -37,12 +37,43 @@ transactions__get_transaction_status ─COMPLETED─▶ record txHash; deal → 
 - `GET /health` returns `ok`.
 - `POST /attest {"deal_hash": "<64 hex>"}` calls `DstackClient().get_quote(bytes.fromhex(deal_hash) + b"\x00" * 32)` (exactly 64 bytes) through `/var/run/dstack.sock` and returns the TDX quote. The quote's `report_data` contains the deal hash.
 
-`check_attestation.py` confirms that the returned quote's report_data matches the deal's `deal_hash`. It doesn't verify Intel's signature chain; use a DCAP verifier for that. `offer-001` was settled before attestation existed, so it has no attestation record.
+`check_attestation.py` confirms that the returned quote's report_data matches the deal's `deal_hash`. It doesn't verify Intel's signature chain; see [How to verify a quote](#how-to-verify-a-quote).
 
-## Demo result
+The full `/attest` responses (`deal_hash`, `quote`, `event_log`) are kept in `attestations/`. `offer-001` was attested after it had already settled, so its deal file has no `attestation` field. `offer-002` was attested before its payment request was created.
 
-`offer-001` settled with a 0.001 ETH deposit on Ethereum mainnet:
-https://etherscan.io/tx/0x98ac14ff362b4dc4fec30552cfe4b0b2d1eaac882eea9491ae99855495c4de46
+## How to verify a quote
+
+Anyone can check that the quotes in `attestations/` are genuine Intel TDX quotes that commit to the deal hashes. There are three levels.
+
+**1. Binding (local, offline).** Confirms that the quote's report_data is the deal hash:
+
+```
+python check_attestation.py deals/offer-002.json attestations/offer-002.json   # OK
+```
+
+**2. Signature chain (Phala's quote verifier).** Confirms that the quote was produced by real TDX hardware with a valid Intel certificate chain:
+
+```bash
+python -c "import json;print(json.dumps({'hex': json.load(open('attestations/offer-002.json'))['quote']}))" > q.json
+curl -s -X POST https://cloud-api.phala.com/api/v1/attestations/verify -H "Content-Type: application/json" -d @q.json
+```
+
+Look for `"success": true` and `"quote": {"verified": true, ...}`. Also check that `quote.body.reportdata` is `0x<deal_hash>` followed by 64 zeros. The response's `checksum` opens a human-readable report at `https://proof.t16z.com/reports/<checksum>` (the TEE Attestation Explorer). Phala uses its own checksum for this, which is not the `quote_sha256` stored in the deal.
+
+Checked for offer-002 on 2026-11-26: `success: true`, `quote.verified: true`, report data `0x8d25ba49…60f4ed` followed by zeros. Report: https://proof.t16z.com/reports/82d461b8ff9cf0b6fb1c4d84ca3bb841caca52cbd1a42fb5b4dee8aec574257e
+
+**3. What ran in the TEE (Trust Center).** Levels 1 and 2 prove that *some* TDX VM signed the deal hash. To prove it was *this* attest-service, use [Phala's Trust Center](https://github.com/Phala-Network/trust-center) (`dstack-verifier`). It verifies the quote with DCAP-QVL and recomputes the OS measurements (MRTD and RTMR0-2). It also checks the RTMR3 event log's compose hash (from `event_log`) against the app's on-chain allowed compose hashes, which ties the quote to `attest-service/docker-compose.yml`. For fully local, trustless verification, build the Trust Center verifier, which bundles `dcap-qvl`, from that repo.
+
+## Demo results
+
+Both deals were settled with a 0.001 ETH deposit on Ethereum mainnet:
+
+| Deal | Attested | Transaction |
+|---|---|---|
+| offer-001 | after settlement | https://etherscan.io/tx/0x98ac14ff362b4dc4fec30552cfe4b0b2d1eaac882eea9491ae99855495c4de46 |
+| offer-002 | before the payment request | https://etherscan.io/tx/0x09142db39adc06b448ab043c519684b507953cf6e95327b886f422158c3de126 |
+
+offer-002 needed three payment requests: the first two were unreachable in the Tangem app, so they're marked `EXPIRED` in `settlements.json`.
 
 ## How the tamper check works
 

@@ -1,6 +1,6 @@
 {
   "deal_id": "offer-002",
-  "status": "settlement_pending",
+  "status": "settled",
   "terms": {
     "type": "offer_check",
     "candidate": "Jordan Lee",
