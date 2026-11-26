@@ -10,7 +10,7 @@ Demo: tamper-evident deal files, attested inside a TEE, then settled as ETH paym
 
 ## Config
 
-- `ATTEST_URL`: `<ATTEST_URL>` (the public URL of the deployed attest-service, with no trailing slash). While it is still the `<ATTEST_URL>` placeholder, `settle` must refuse: attestation can't succeed.
+- `ATTEST_URL`: `https://7689ab1feadf9a96d7d08c7c41489613277ede01-8000.dstack-pha1-prod9.phala.network` (the public URL of the deployed attest-service on Phala Cloud, with no trailing slash). Below, `<ATTEST_URL>` means this value. If it is empty or unreachable, `settle` must refuse.
 
 ## Workflow: `settle <deal file>`
 

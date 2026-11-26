@@ -1,0 +1,35 @@
+{
+  "deal_id": "offer-002",
+  "status": "settlement_pending",
+  "terms": {
+    "type": "offer_check",
+    "candidate": "Jordan Lee",
+    "employer": "Contoso Robotics",
+    "role": "Staff Platform Engineer",
+    "salary": {
+      "amount": 182000,
+      "currency": "USD",
+      "period": "year"
+    },
+    "signing_bonus": {
+      "amount": 20000,
+      "currency": "USD"
+    },
+    "agreed_at": "2026-11-26T19:30:00Z",
+    "settlement": {
+      "purpose": "deposit",
+      "amount": "0.001",
+      "asset": "ETH",
+      "tokenId": "ethereum",
+      "networkId": "ethereum",
+      "toAddress": "0xA6622e7E77ed0f63FeA527273418C267C1c70085"
+    }
+  },
+  "deal_hash": "8d25ba499985356fc12586a80e309e1008aa13cdb79f7912868834249a60f4ed",
+  "attestation": {
+    "url": "https://7689ab1feadf9a96d7d08c7c41489613277ede01-8000.dstack-pha1-prod9.phala.network/attest",
+    "quote_prefix": "040002008100000000000000939a7233",
+    "quote_sha256": "ec2d104951bce0b51ca50372eb224313a02ad3ce0dd7dd7ce5096efbd91d54a0",
+    "attested_at": "2026-11-26T19:06:34Z"
+  }
+}
