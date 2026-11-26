@@ -1,0 +1,12 @@
+[
+  {
+    "deal_id": "offer-001",
+    "deal_hash": "348b04d9ad9fb4946c76ba95d28966b056d131826c48359d58042b6ebf2be469",
+    "intentId": "4edd83e9-be97-4520-af3d-1439d8820f5a",
+    "deeplink": "tangem://intent?id=4edd83e9-be97-4520-af3d-1439d8820f5a&source=transaction&type=send",
+    "timestamp": "2026-11-26T18:26:09Z",
+    "status": "COMPLETED",
+    "txHash": "0x98ac14ff362b4dc4fec30552cfe4b0b2d1eaac882eea9491ae99855495c4de46",
+    "completedAt": "2026-11-26T18:30:44Z"
+  }
+]

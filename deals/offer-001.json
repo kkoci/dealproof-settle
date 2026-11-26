@@ -1,0 +1,29 @@
+{
+  "deal_id": "offer-001",
+  "status": "settled",
+  "terms": {
+    "type": "offer_check",
+    "candidate": "Alex Rivera",
+    "employer": "Northwind Labs",
+    "role": "Senior Backend Engineer",
+    "salary": {
+      "amount": 165000,
+      "currency": "USD",
+      "period": "year"
+    },
+    "signing_bonus": {
+      "amount": 15000,
+      "currency": "USD"
+    },
+    "agreed_at": "2026-11-26T18:00:00Z",
+    "settlement": {
+      "purpose": "deposit",
+      "amount": "0.001",
+      "asset": "ETH",
+      "tokenId": "ethereum",
+      "networkId": "ethereum",
+      "toAddress": "0xA6622e7E77ed0f63FeA527273418C267C1c70085"
+    }
+  },
+  "deal_hash": "348b04d9ad9fb4946c76ba95d28966b056d131826c48359d58042b6ebf2be469"
+}
