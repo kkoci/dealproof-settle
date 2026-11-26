@@ -18,6 +18,9 @@ verify_deal.py ──TAMPERED──▶ stop (no Tangem call, no intent)
 already settled? ──yes──▶ stop (no duplicate intent)
       │ no
       ▼
+POST <ATTEST_URL>/attest + check_attestation.py ──FAILED──▶ stop (no intent)
+      │ OK → deal.attestation = {url, quote_prefix, quote_sha256, attested_at}
+      ▼
 wallets__get_tokens ─▶ transactions__send_transaction (sendNotification: true)
       │
       ▼
@@ -26,6 +29,15 @@ settlements.json += {deal_hash, intentId, deeplink, timestamp}; deal → settlem
       ▼
 transactions__get_transaction_status ─COMPLETED─▶ record txHash; deal → settled
 ```
+
+## TEE attestation (attest-service)
+
+`attest-service/docker-compose.yml` runs on Phala Cloud (Intel TDX via dstack). You can paste it straight into the dashboard: it uses the stock `python:3.12-slim` image, installs `fastapi`, `uvicorn` and `dstack-sdk`, writes the app with a heredoc and starts uvicorn on port 8000.
+
+- `GET /health` returns `ok`.
+- `POST /attest {"deal_hash": "<64 hex>"}` calls `DstackClient().get_quote(bytes.fromhex(deal_hash))` through `/var/run/dstack.sock` and returns the TDX quote. The quote's `report_data` contains the deal hash.
+
+`check_attestation.py` confirms that the returned quote's report_data matches the deal's `deal_hash`. It doesn't verify Intel's signature chain; use a DCAP verifier for that. `offer-001` was settled before attestation existed, so it has no attestation record.
 
 ## Demo result
 

@@ -1,0 +1,57 @@
+# DealProof attest-service: paste into the Phala Cloud dashboard as-is.
+# No custom image and no build step. Dependencies install and the app is written at container start.
+services:
+  attest:
+    image: python:3.12-slim
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        pip install --no-cache-dir --quiet fastapi uvicorn "dstack-sdk==0.5.4"
+        mkdir -p /app
+        cat > /app/main.py <<'EOF'
+        import re
+
+        from dstack_sdk import DstackClient
+        from fastapi import FastAPI, HTTPException
+        from fastapi.responses import PlainTextResponse
+        from pydantic import BaseModel
+
+        app = FastAPI(title="DealProof attest-service")
+        HEX32 = re.compile(r"^[0-9a-fA-F]{64}$")
+
+
+        class AttestRequest(BaseModel):
+            deal_hash: str
+
+
+        @app.get("/health", response_class=PlainTextResponse)
+        def health():
+            return "ok"
+
+
+        @app.post("/attest")
+        def attest(req: AttestRequest):
+            deal_hash = req.deal_hash.lower().removeprefix("0x")
+            if not HEX32.match(deal_hash):
+                raise HTTPException(400, "deal_hash must be 32 bytes of hex (sha256)")
+            try:
+                # DstackClient() talks to /var/run/dstack.sock; report_data <= 64 bytes.
+                resp = DstackClient().get_quote(bytes.fromhex(deal_hash))
+            except Exception as exc:
+                raise HTTPException(503, "dstack get_quote failed: " + type(exc).__name__)
+            quote_hex = resp.quote.lower().removeprefix("0x")
+            return {
+                "deal_hash": deal_hash,
+                "quote": quote_hex,
+                "event_log": resp.event_log,
+            }
+        EOF
+        cd /app
+        exec uvicorn main:app --host 0.0.0.0 --port 8000
