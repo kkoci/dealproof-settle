@@ -24,7 +24,7 @@ services:
         from pydantic import BaseModel
 
         app = FastAPI(title="DealProof attest-service")
-        HEX32 = re.compile(r"^[0-9a-fA-F]{64}$")
+        HEX32 = re.compile(r"[0-9a-fA-F]{64}")
 
 
         class AttestRequest(BaseModel):
@@ -39,11 +39,13 @@ services:
         @app.post("/attest")
         def attest(req: AttestRequest):
             deal_hash = req.deal_hash.lower().removeprefix("0x")
-            if not HEX32.match(deal_hash):
+            if not HEX32.fullmatch(deal_hash):
                 raise HTTPException(400, "deal_hash must be 32 bytes of hex (sha256)")
             try:
-                # DstackClient() talks to /var/run/dstack.sock; report_data <= 64 bytes.
-                resp = DstackClient().get_quote(bytes.fromhex(deal_hash))
+                # DstackClient() talks to /var/run/dstack.sock.
+                # report_data is exactly 64 bytes: deal_hash (32) + 32 zero bytes.
+                report_data = bytes.fromhex(deal_hash) + b"\x00" * 32
+                resp = DstackClient().get_quote(report_data)
             except Exception as exc:
                 raise HTTPException(503, "dstack get_quote failed: " + type(exc).__name__)
             quote_hex = resp.quote.lower().removeprefix("0x")
